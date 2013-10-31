@@ -1,5 +1,6 @@
 
 #include <vector>
+#include <sstream>
 #include <iostream>
 #include <fstream>
 #include <cmath>
@@ -21,11 +22,30 @@
 #include <time.h>
 #include <math.h>
 
+#include "three_d_vector.h"
+#include "bez_surface.h"
+
 
 #define PI 3.14159265  // Should be used from mathlib
 inline float sqr(float x) { return x*x; }
 
 using namespace std;
+double subdivision_parameter;
+
+//The file we are parsing
+char* bez_file;
+
+//How many surfaces the file contains
+int num_surfaces;
+
+//Current Bez surface we are building
+BezSurface* surface = new BezSurface();
+
+//Our Surfaces
+vector<BezSurface*> surfaces;
+
+//Whether or not we use adaptive/uniform subdivision (DEFAULT ADAPTIVE)
+bool adaptive = true;
 
 //****************************************************
 // Some Classes
@@ -160,7 +180,105 @@ void myDisplay() {
 //****************************************************
 // the usual stuff, nothing exciting here
 //****************************************************
+void parseBez(const char* filename) {
+  int line_count = 1;
+
+  std::ifstream inpfile(filename);
+  if(!inpfile.is_open()) {
+    std::cout << "Unable to open file" << std::endl;
+  } else {
+    std::string line;
+    //MatrixStack mst;
+    
+    while(inpfile.good()) {
+      std::vector<std::string> splitline;
+      std::string buf;
+
+      std::getline(inpfile,line);
+      std::stringstream ss(line);
+
+      while (ss >> buf) {
+        splitline.push_back(buf);
+      }
+      //Ignore blank lines
+      if(splitline.size() == 0) {
+        continue;
+      }
+
+      //First line. Tells us how many surfaces there are
+      else if (line_count == 1) {
+        num_surfaces = atoi(splitline[0].c_str());
+        line_count++;
+      //Control Point Parsing
+      } else if(line_count > 1) {
+        int curve_index = (line_count - 2) % 4;
+        long double x1, x2, x3, x4, y1, y2, y3, y4, z1, z2, z3, z4;
+        x1 = atof(splitline[0].c_str());
+        y1 = atof(splitline[1].c_str());
+        z1 = atof(splitline[2].c_str());
+        ThreeDVector* c1 = new ThreeDVector(x1, y1, z1);
+
+        x2 = atof(splitline[3].c_str());
+        y2 = atof(splitline[4].c_str());
+        z2 = atof(splitline[5].c_str());
+        ThreeDVector* c2 = new ThreeDVector(x2, y2, z2);
+
+        x3 = atof(splitline[6].c_str());
+        y3 = atof(splitline[7].c_str());
+        z3 = atof(splitline[8].c_str());
+        ThreeDVector* c3 = new ThreeDVector(x3, y3, z3);
+
+        x4 = atof(splitline[9].c_str());
+        y4 = atof(splitline[10].c_str());
+        z4 = atof(splitline[11].c_str());
+        ThreeDVector* c4 = new ThreeDVector(x4, y4, z4);
+
+        ThreeDVector* curve[4];
+        curve[0] = c1;
+        curve[1] = c2;
+        curve[2] = c3;
+        curve[3] = c4;
+        surface->add_control_points(curve_index, curve);
+
+        line_count++;
+
+        if (curve_index == 3) {
+          surfaces.push_back(surface);
+          surface = new BezSurface();
+        }
+      }
+    }
+  }
+}
+
 int main(int argc, char *argv[]) {
+
+  if (argc < 3) {
+    cout << "USAGE: ./as3 [bez file] [subdivision parameter] [flags]" << endl;
+    exit(1);
+  }
+
+  bez_file = argv[1];
+  subdivision_parameter = atof(argv[2]);
+
+
+  for (int i = 3; i < argc; i++) {
+    if (string(argv[i]) == "-a") {
+      adaptive = true;
+    } else {
+      adaptive = false;
+    }
+  }
+
+  parseBez(bez_file);
+  cout << surfaces.size() << endl;
+
+  if (adaptive) {
+    cout << "Adaptive" << endl;
+  } else {
+    cout << "Uniform" << endl;
+  }
+
   //This initializes glut
   glutInit(&argc, argv);
 
