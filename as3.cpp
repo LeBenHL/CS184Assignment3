@@ -54,6 +54,14 @@ vector<BezSurface*> surfaces;
 //Whether or not we use adaptive/uniform subdivision (DEFAULT ADAPTIVE)
 bool adaptive = true;
 
+//The vertices that define our polygon
+vector<vector<pair<ThreeDVector*, ThreeDVector*> > > polygons;
+
+//Print Function for debugging
+void print(string _string) {
+  cout << _string << endl;
+}
+
 //****************************************************
 // Some Classes
 //****************************************************
@@ -71,19 +79,6 @@ class Viewport {
 //****************************************************
 Viewport	viewport;
 
-
-
-
-//****************************************************
-// Simple init function
-//****************************************************
-void initScene(){
-
-  // Nothing to do here for this simple example.
-
-}
-
-
 //****************************************************
 // reshape viewport if the window is resized
 //****************************************************
@@ -94,76 +89,59 @@ void myReshape(int w, int h) {
   glViewport (0,0,viewport.w,viewport.h);
   glMatrixMode(GL_PROJECTION);
   glLoadIdentity();
-  gluOrtho2D(0, viewport.w, 0, viewport.h);
+
+  glOrtho(-5, 5, -5, 5, 5, -5);
 
 }
 
-
 //****************************************************
-// A routine to set a pixel by drawing a GL point.  This is not a
-// general purpose routine as it assumes a lot of stuff specific to
-// this example.
+// Simple init function
 //****************************************************
+void initScene(){
+  glClearColor(0.0f, 0.0f, 0.0f, 0.0f); // Clear to black, fully transparent
 
-void setPixel(int x, int y, GLfloat r, GLfloat g, GLfloat b) {
-  glColor3f(r, g, b);
-  glVertex2f(x + 0.5, y + 0.5);   // The 0.5 is to target pixel
-  // centers 
-  // Note: Need to check for gap
-  // bug on inst machines.
+  // Enable lighting and the light we have set up
+  glEnable(GL_LIGHTING);
+  glEnable(GL_LIGHT0);
+  glEnable(GL_DEPTH_TEST);
+
+  //Set lighting parameters
+  GLfloat light_position0[] = {1.0, 0.0, -1.0, 0};
+  GLfloat light_ambient0[] = {0, 0, 0, 1};
+  GLfloat light_diffuse0[] = {1.0, 1.0, 1.0, 1};
+  GLfloat light_specular0[] = {1.0, 1.0, 1.0, 1};
+
+  glLightfv(GL_LIGHT0, GL_POSITION, light_position0);
+  glLightfv(GL_LIGHT0, GL_AMBIENT, light_ambient0);
+  glLightfv(GL_LIGHT0, GL_DIFFUSE, light_diffuse0);
+  glLightfv(GL_LIGHT0, GL_SPECULAR, light_specular0);
+
+  glLightf(GL_LIGHT0, GL_CONSTANT_ATTENUATION, 1.0);
+  glLightf(GL_LIGHT0, GL_LINEAR_ATTENUATION, 0.0);
+  glLightf(GL_LIGHT0, GL_QUADRATIC_ATTENUATION, 0.0);
+
+  //Set Material Parameters
+  GLfloat ambient_color[] = { 0.0, 0.0, 0.0, 1.0 };
+  GLfloat diffuse_color[] = { 0.0, 0.3, 0.3, 1.0 };
+  GLfloat specular_color[] = { 1.0, 1.0, 1.0, 1.0 };
+  GLfloat shininess[] = { 2.0 };
+  GLfloat emission[] = {0, 0, 0, 1};
+
+  glMaterialfv(GL_FRONT_AND_BACK, GL_AMBIENT, ambient_color);
+  glMaterialfv(GL_FRONT_AND_BACK, GL_DIFFUSE, diffuse_color);
+  glMaterialfv(GL_FRONT_AND_BACK, GL_SPECULAR, specular_color);
+  glMaterialfv(GL_FRONT_AND_BACK, GL_SHININESS, shininess);
+  glMaterialfv(GL_FRONT_AND_BACK, GL_EMISSION, emission);
+
+  glEnable(GL_BLEND);
+  glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
+  // Enable shading
+  glShadeModel(GL_SMOOTH);
+
+  myReshape(viewport.w,viewport.h);
 }
 
-//****************************************************
-// Draw a filled circle.  
-//****************************************************
-
-
-void circle(float centerX, float centerY, float radius) {
-  // Draw inner circle
-  glBegin(GL_POINTS);
-
-  // We could eliminate wasted work by only looping over the pixels
-  // inside the sphere's radius.  But the example is more clear this
-  // way.  In general drawing an object by loopig over the whole
-  // screen is wasteful.
-
-  int i,j;  // Pixel indices
-
-  int minI = max(0,(int)floor(centerX-radius));
-  int maxI = min(viewport.w-1,(int)ceil(centerX+radius));
-
-  int minJ = max(0,(int)floor(centerY-radius));
-  int maxJ = min(viewport.h-1,(int)ceil(centerY+radius));
-
-
-
-  for (i=0;i<viewport.w;i++) {
-    for (j=0;j<viewport.h;j++) {
-
-      // Location of the center of pixel relative to center of sphere
-      float x = (i+0.5-centerX);
-      float y = (j+0.5-centerY);
-
-      float dist = sqrt(sqr(x) + sqr(y));
-
-      if (dist<=radius) {
-
-        // This is the front-facing Z coordinate
-        float z = sqrt(radius*radius-dist*dist);
-
-        setPixel(i,j, 1.0, 0.0, 0.0);
-
-        // This is amusing, but it assumes negative color values are treated reasonably.
-        // setPixel(i,j, x/radius, y/radius, z/radius );
-      }
-
-
-    }
-  }
-
-
-  glEnd();
-}
 //****************************************************
 // function that does the actual drawing of stuff
 //***************************************************
@@ -171,12 +149,23 @@ void myDisplay() {
 
   glClear(GL_COLOR_BUFFER_BIT);				// clear the color buffer
 
-  glMatrixMode(GL_MODELVIEW);			        // indicate we are specifying camera transformations
-  glLoadIdentity();				        // make sure transformation is "zero'd"
-
+  glMatrixMode(GL_MODELVIEW);			    // indicate we are specifying camera transformations
+  glLoadIdentity();				            // make sure transformation is "zero'd"
 
   // Start drawing
-  circle(viewport.w / 2.0 , viewport.h / 2.0 , min(viewport.w, viewport.h) / 3.0);
+  for(vector<vector<pair<ThreeDVector*, ThreeDVector*> > >::iterator it = polygons.begin(); it != polygons.end(); ++it) {
+    vector<pair<ThreeDVector*, ThreeDVector*> > polygon = *it;
+    glBegin(GL_POLYGON);                      // Draw A Polygon
+    for(vector<pair<ThreeDVector*, ThreeDVector*> >::iterator i = polygon.begin(); i != polygon.end(); ++i) {
+      pair<ThreeDVector*, ThreeDVector*> vertex_pair = *i;
+      ThreeDVector* normal = vertex_pair.first;
+      ThreeDVector* vertex = vertex_pair.second;
+      glNormal3f(normal->x, normal->y, normal->z);
+      glVertex3f(vertex->x, vertex->y, vertex->z);
+    }
+    glEnd();
+  }
+  //glutSolidSphere(5.0, 100, 100);
 
   glFlush();
   glutSwapBuffers();					// swap buffers (we earlier set double buffer)
@@ -187,9 +176,6 @@ void myDisplay() {
 //****************************************************
 // the usual stuff, nothing exciting here
 //****************************************************
-void print(string _string) {
-  cout << _string << endl;
-}
 
 void parseBez(const char* filename) {
   int line_count = 1;
@@ -340,7 +326,6 @@ int main(int argc, char *argv[]) {
   }
 
   parseBez(bez_file);
-  cout << surfaces.size() << endl;
 
   if (adaptive) {
     cout << "Adaptive" << endl;
@@ -353,6 +338,20 @@ int main(int argc, char *argv[]) {
 
   //This tells glut to use a double-buffered window with red, green, and blue channels 
   glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGB);
+
+  vector<pair<ThreeDVector*, ThreeDVector*> > polygon;
+  polygon.push_back(make_pair(new ThreeDVector(0, 0, -1), new ThreeDVector(-1.0, 1.0, 0)));`
+  polygon.push_back(make_pair(new ThreeDVector(0, 0, -1), new ThreeDVector(1.0, 1.0, 0)));
+  polygon.push_back(make_pair(new ThreeDVector(0, 0, 1), new ThreeDVector(1.0, -1.0, 0)));
+  polygon.push_back(make_pair(new ThreeDVector(0, 0, 1), new ThreeDVector(-1.0, -1.0, 0)));
+  polygons.push_back(polygon);
+
+  vector<pair<ThreeDVector*, ThreeDVector*> > polygon2;
+  polygon2.push_back(make_pair(new ThreeDVector(0, 0, -1), new ThreeDVector(-3.0, -1.0, 0)));
+  polygon2.push_back(make_pair(new ThreeDVector(0, 0, -1), new ThreeDVector(-1.0, -1.0, 0)));
+  polygon2.push_back(make_pair(new ThreeDVector(0, 0, -1), new ThreeDVector(-1.0, -3.0, 0)));
+  polygon2.push_back(make_pair(new ThreeDVector(0, 0, -1), new ThreeDVector(-3.0, -3.0, 0)));
+  polygons.push_back(polygon2);
 
   // Initalize theviewport size
   viewport.w = 400;
