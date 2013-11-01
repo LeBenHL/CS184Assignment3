@@ -4,6 +4,7 @@
 #include <iostream>
 #include <fstream>
 #include <cmath>
+#include <string>
 
 #ifdef _WIN32
 #include <windows.h>
@@ -27,6 +28,12 @@
 
 
 #define PI 3.14159265  // Should be used from mathlib
+#define KEY_S 115
+#define KEY_W 119
+#define KEY_PLUS 43
+#define KEY_MINUS 45
+#define KEY_H 104
+
 inline float sqr(float x) { return x*x; }
 
 using namespace std;
@@ -180,6 +187,10 @@ void myDisplay() {
 //****************************************************
 // the usual stuff, nothing exciting here
 //****************************************************
+void print(string _string) {
+  cout << _string << endl;
+}
+
 void parseBez(const char* filename) {
   int line_count = 1;
 
@@ -251,6 +262,64 @@ void parseBez(const char* filename) {
   }
 }
 
+void myKeyboardFunc(unsigned char key, int x, int y){
+  switch(key){
+    case KEY_S:
+      print("Toggle");
+      break;
+    case KEY_W:
+      print("Wireframe");
+      break;
+    case KEY_PLUS:
+      print("Zoom In");
+      break;
+    case KEY_MINUS:
+      print("Zoom Out");
+      break;
+    case KEY_H:
+      print("Hidden Line");
+      break;
+    default:
+      break;
+  }
+}
+
+void mySpecialKeyFunc(int key, int x, int y){
+  bool shift = (glutGetModifiers() == GLUT_ACTIVE_SHIFT);
+  switch(key){
+    case GLUT_KEY_UP:
+      if (shift) {
+        print("Translate Up");
+      } else {
+        print("Rotate Up");
+      }
+      break;
+    case GLUT_KEY_DOWN:
+      if (shift) {
+          print("Translate Down");
+        } else {
+        print("Rotate Down");
+      }
+      break;
+    case GLUT_KEY_LEFT:
+      if (shift) {
+        print("Translate Left");
+      } else {
+        print("Rotate Left");
+      }
+      break;
+    case GLUT_KEY_RIGHT:
+      if (shift) {
+        print("Translate Right");
+      } else {
+        print("Rotate Right");
+      }
+      break;
+    default:
+      break;
+  }
+}
+
 int main(int argc, char *argv[]) {
 
   if (argc < 3) {
@@ -298,6 +367,8 @@ int main(int argc, char *argv[]) {
 
   glutDisplayFunc(myDisplay);				// function to run when its time to draw something
   glutReshapeFunc(myReshape);				// function to run when the window gets resized
+  glutKeyboardFunc(myKeyboardFunc); // basic keys callback
+  glutSpecialFunc(mySpecialKeyFunc); //special keys callback
 
   glutMainLoop();							// infinite loop that will keep drawing and resizing
   // and whatever else
