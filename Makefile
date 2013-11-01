@@ -1,4 +1,4 @@
-OBJS = as3.o three_d_vector.o bez_surface.o bez_curve.o
+OBJS = as3.o three_d_vector.o bez_surface.o bez_curve.o lodepng.o
 CC = g++
 INCLUDE = -I ./
 FLAGS = -O2
@@ -17,8 +17,10 @@ RM = /bin/rm -f
 all: main 
 main: $(OBJS)
 	$(CC) $(CFLAGS) $(INCLUDE) $(FLAGS) -o as3 $(OBJS) $(LDFLAGS) 
-as3.o: as3.cpp three_d_vector.h bez_surface.h
+as3.o: as3.cpp three_d_vector.h bez_surface.h lodepng.h
 	$(CC) $(CFLAGS) $(INCLUDE) $(FLAGS) -c as3.cpp -o as3.o
+lodepng.o: lodepng.h lodepng.cpp
+	$(CC) $(CFLAGS) $(INCLUDE) $(FLAGS) -c lodepng.cpp -o lodepng.o
 three_d_vector.o: three_d_vector.h three_d_vector.cpp
 	$(CC) $(CFLAGS) $(INCLUDE) $(FLAGS) -c three_d_vector.cpp -o three_d_vector.o
 bez_surface.o: bez_surface.h bez_surface.cpp three_d_vector.h

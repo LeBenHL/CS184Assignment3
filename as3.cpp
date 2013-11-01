@@ -25,6 +25,7 @@
 
 #include "three_d_vector.h"
 #include "bez_surface.h"
+#include "lodepng.h"
 
 
 #define PI 3.14159265  // Should be used from mathlib
@@ -57,9 +58,24 @@ bool adaptive = true;
 //The vertices that define our polygon
 vector<vector<pair<ThreeDVector*, ThreeDVector*> > > polygons;
 
+//Save Boolean
+bool save = false;
+//Filename
+static const char* file_name;
+
 //Print Function for debugging
 void print(string _string) {
   cout << _string << endl;
+}
+
+//Create PNG Function
+void createPng(const char* filename, std::vector<unsigned char>& image, unsigned width, unsigned height)
+{
+  //Encode the image
+  unsigned error = lodepng::encode(filename, image, width, height);
+
+  //if there's an error, display it
+  if(error) std::cout << "encoder error " << error << ": "<< lodepng_error_text(error) << std::endl;
 }
 
 //****************************************************
@@ -98,7 +114,7 @@ void myReshape(int w, int h) {
 // Simple init function
 //****************************************************
 void initScene(){
-  glClearColor(0.0f, 0.0f, 0.0f, 0.0f); // Clear to black, fully transparent
+  glClearColor(0.3f, 0.3f, 0.3f, 1.0f); // Clear to black, fully transparent
 
   // Enable lighting and the light we have set up
   glEnable(GL_LIGHTING);
@@ -165,7 +181,18 @@ void myDisplay() {
     }
     glEnd();
   }
-  //glutSolidSphere(5.0, 100, 100);
+  glutSolidSphere(5.0, 100, 100);
+
+  if (save) {
+    int w = glutGet(GLUT_WINDOW_WIDTH);
+    int h = glutGet(GLUT_WINDOW_HEIGHT);
+    vector<unsigned char> buf(w * h * 4);
+
+    glPixelStorei(GL_PACK_ALIGNMENT, 1);
+    glReadPixels(0, 0, w, h, GL_RGBA, GL_UNSIGNED_BYTE, &buf[0] );
+
+    createPng(file_name, buf, w, h);
+  }
 
   glFlush();
   glutSwapBuffers();					// swap buffers (we earlier set double buffer)
@@ -320,8 +347,14 @@ int main(int argc, char *argv[]) {
   for (int i = 3; i < argc; i++) {
     if (string(argv[i]) == "-a") {
       adaptive = true;
-    } else {
+    } else if (string(argv[i]) == "-u") {
       adaptive = false;
+    } else if (string(argv[i]) == "-save") {
+      if(i + 1 < argc){
+        save = true;
+        file_name = argv[i + 1];
+        i = i + 1;
+      }
     }
   }
 
@@ -340,7 +373,7 @@ int main(int argc, char *argv[]) {
   glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGB);
 
   vector<pair<ThreeDVector*, ThreeDVector*> > polygon;
-  polygon.push_back(make_pair(new ThreeDVector(0, 0, -1), new ThreeDVector(-1.0, 1.0, 0)));`
+  polygon.push_back(make_pair(new ThreeDVector(0, 0, -1), new ThreeDVector(-1.0, 1.0, 0)));
   polygon.push_back(make_pair(new ThreeDVector(0, 0, -1), new ThreeDVector(1.0, 1.0, 0)));
   polygon.push_back(make_pair(new ThreeDVector(0, 0, 1), new ThreeDVector(1.0, -1.0, 0)));
   polygon.push_back(make_pair(new ThreeDVector(0, 0, 1), new ThreeDVector(-1.0, -1.0, 0)));
