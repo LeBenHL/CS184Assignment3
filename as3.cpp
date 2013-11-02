@@ -52,8 +52,8 @@ BezSurface* surface = new BezSurface();
 //Our Surfaces
 vector<BezSurface*> surfaces;
 
-//Whether or not we use adaptive/uniform subdivision (DEFAULT ADAPTIVE)
-bool adaptive = true;
+//Whether or not we use adaptive/uniform subdivision (DEFAULT UNIFORM)
+bool adaptive = false;
 
 //The vertices that define our polygon
 vector<vector<pair<ThreeDVector*, ThreeDVector*> > > polygons;
@@ -168,20 +168,22 @@ void myDisplay() {
   glMatrixMode(GL_MODELVIEW);			    // indicate we are specifying camera transformations
   glLoadIdentity();				            // make sure transformation is "zero'd"
 
+  glRotatef(270, 1, 0, 0);
+
   // Start drawing
   for(vector<vector<pair<ThreeDVector*, ThreeDVector*> > >::iterator it = polygons.begin(); it != polygons.end(); ++it) {
     vector<pair<ThreeDVector*, ThreeDVector*> > polygon = *it;
     glBegin(GL_POLYGON);                      // Draw A Polygon
     for(vector<pair<ThreeDVector*, ThreeDVector*> >::iterator i = polygon.begin(); i != polygon.end(); ++i) {
       pair<ThreeDVector*, ThreeDVector*> vertex_pair = *i;
-      ThreeDVector* normal = vertex_pair.first;
-      ThreeDVector* vertex = vertex_pair.second;
+      ThreeDVector* vertex = vertex_pair.first;
+      ThreeDVector* normal = vertex_pair.second;
       glNormal3f(normal->x, normal->y, normal->z);
       glVertex3f(vertex->x, vertex->y, vertex->z);
     }
     glEnd();
   }
-  glutSolidSphere(5.0, 100, 100);
+  //glutSolidSphere(5.0, 100, 100);
 
   if (save) {
     int w = glutGet(GLUT_WINDOW_WIDTH);
@@ -271,6 +273,70 @@ void parseBez(const char* filename) {
           surface = new BezSurface();
         }
       }
+    }
+  }
+}
+
+void uniform_subdivide(BezSurface* surface) {
+  //compute how many subdivisions there are
+  int EPSILION = 0.001;
+  int num_subdivisions = (1 + EPSILION) / subdivision_parameter                                                                                                                                                                                                                                                       ;
+  pair<ThreeDVector*, ThreeDVector*> surface_points[num_subdivisions + 1][num_subdivisions + 1];
+
+  for (int iu = 0; iu < num_subdivisions + 1; iu++) {
+    long double u = iu * subdivision_parameter;
+
+    for (int iv = 0; iv < num_subdivisions + 1; iv++) {
+      long double v = iv * subdivision_parameter;
+
+      pair<ThreeDVector*, ThreeDVector*> surface_point = surface->interpolate(u, v);
+      surface_points[iu][iv] = surface_point;
+    }
+  }
+
+  //Interpolate the polygons from this surface_point mesh
+  for (int u = 0; u < num_subdivisions; u++) {
+
+    for (int v = 0; v < num_subdivisions; v++) {
+      pair<ThreeDVector*, ThreeDVector*> UL = surface_points[u + 1][v];
+      pair<ThreeDVector*, ThreeDVector*> UR = surface_points[u + 1][v + 1];
+      pair<ThreeDVector*, ThreeDVector*> LR = surface_points[u][v + 1];
+      pair<ThreeDVector*, ThreeDVector*> LL = surface_points[u][v];
+
+      vector<pair<ThreeDVector*, ThreeDVector*> > polygon;
+      polygon.push_back(UL);
+      polygon.push_back(UR);
+      polygon.push_back(LR);
+      polygon.push_back(LL);
+      polygons.push_back(polygon);
+    }
+  }
+
+}
+
+void generatePolygons() {
+
+  /*
+  vector<pair<ThreeDVector*, ThreeDVector*> > polygon;
+  polygon.push_back(make_pair(new ThreeDVector(0, 0, -1), new ThreeDVector(-1.0, 1.0, 0)));
+  polygon.push_back(make_pair(new ThreeDVector(0, 0, -1), new ThreeDVector(1.0, 1.0, 0)));
+  polygon.push_back(make_pair(new ThreeDVector(0, 0, 1), new ThreeDVector(1.0, -1.0, 0)));
+  polygon.push_back(make_pair(new ThreeDVector(0, 0, 1), new ThreeDVector(-1.0, -1.0, 0)));
+  polygons.push_back(polygon);
+
+  vector<pair<ThreeDVector*, ThreeDVector*> > polygon2;
+  polygon2.push_back(make_pair(new ThreeDVector(0, 0, -1), new ThreeDVector(-3.0, -1.0, 0)));
+  polygon2.push_back(make_pair(new ThreeDVector(0, 0, -1), new ThreeDVector(-1.0, -1.0, 0)));
+  polygon2.push_back(make_pair(new ThreeDVector(0, 0, -1), new ThreeDVector(-1.0, -3.0, 0)));
+  polygon2.push_back(make_pair(new ThreeDVector(0, 0, -1), new ThreeDVector(-3.0, -3.0, 0)));
+  polygons.push_back(polygon2);
+  */
+  if (adaptive) {
+
+  } else {
+    for (vector<BezSurface*>::iterator i = surfaces.begin(); i != surfaces.end(); ++i) {
+      BezSurface* surface = *i;
+      uniform_subdivide(surface);
     }
   }
 }
@@ -366,25 +432,13 @@ int main(int argc, char *argv[]) {
     cout << "Uniform" << endl;
   }
 
+  generatePolygons();
+
   //This initializes glut
   glutInit(&argc, argv);
 
   //This tells glut to use a double-buffered window with red, green, and blue channels 
   glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGB);
-
-  vector<pair<ThreeDVector*, ThreeDVector*> > polygon;
-  polygon.push_back(make_pair(new ThreeDVector(0, 0, -1), new ThreeDVector(-1.0, 1.0, 0)));
-  polygon.push_back(make_pair(new ThreeDVector(0, 0, -1), new ThreeDVector(1.0, 1.0, 0)));
-  polygon.push_back(make_pair(new ThreeDVector(0, 0, 1), new ThreeDVector(1.0, -1.0, 0)));
-  polygon.push_back(make_pair(new ThreeDVector(0, 0, 1), new ThreeDVector(-1.0, -1.0, 0)));
-  polygons.push_back(polygon);
-
-  vector<pair<ThreeDVector*, ThreeDVector*> > polygon2;
-  polygon2.push_back(make_pair(new ThreeDVector(0, 0, -1), new ThreeDVector(-3.0, -1.0, 0)));
-  polygon2.push_back(make_pair(new ThreeDVector(0, 0, -1), new ThreeDVector(-1.0, -1.0, 0)));
-  polygon2.push_back(make_pair(new ThreeDVector(0, 0, -1), new ThreeDVector(-1.0, -3.0, 0)));
-  polygon2.push_back(make_pair(new ThreeDVector(0, 0, -1), new ThreeDVector(-3.0, -3.0, 0)));
-  polygons.push_back(polygon2);
 
   // Initalize theviewport size
   viewport.w = 400;

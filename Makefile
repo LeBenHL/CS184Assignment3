@@ -23,7 +23,7 @@ lodepng.o: lodepng.h lodepng.cpp
 	$(CC) $(CFLAGS) $(INCLUDE) $(FLAGS) -c lodepng.cpp -o lodepng.o
 three_d_vector.o: three_d_vector.h three_d_vector.cpp
 	$(CC) $(CFLAGS) $(INCLUDE) $(FLAGS) -c three_d_vector.cpp -o three_d_vector.o
-bez_surface.o: bez_surface.h bez_surface.cpp three_d_vector.h
+bez_surface.o: bez_surface.h bez_surface.cpp three_d_vector.h bez_curve.h
 	$(CC) $(CFLAGS) $(INCLUDE) $(FLAGS) -c bez_surface.cpp -o bez_surface.o
 bez_curve.o: bez_curve.h bez_curve.cpp three_d_vector.h
 	$(CC) $(CFLAGS) $(INCLUDE) $(FLAGS) -c bez_curve.cpp -o bez_curve.o
