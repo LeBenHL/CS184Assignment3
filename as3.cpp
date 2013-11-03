@@ -35,6 +35,10 @@
 #define KEY_MINUS 45
 #define KEY_H 104
 
+#define scale_step 0.05
+#define translate_step 0.05
+#define rotation_step 1
+
 inline float sqr(float x) { return x*x; }
 
 using namespace std;
@@ -62,6 +66,27 @@ vector<vector<pair<ThreeDVector*, ThreeDVector*> > > polygons;
 bool save = false;
 //Filename
 static const char* file_name;
+
+//Scale Multipliers for Zoom
+double scale_x = 1;
+double scale_y = 1;
+double scale_z = 1;
+
+//Translate values
+double translate_x = 0;
+double translate_y = 0;
+double translate_z = 0;
+
+//Rotation in degrees
+double rotate_x = 0;
+double rotate_y = 0;
+double rotate_z = 0;
+
+//bool for wireframe
+bool wireframe = false;
+
+//bool for flat shading
+bool flat = false;
 
 //Print Function for debugging
 void print(string _string) {
@@ -119,10 +144,12 @@ void initScene(){
   // Enable lighting and the light we have set up
   glEnable(GL_LIGHTING);
   glEnable(GL_LIGHT0);
+  glEnable(GL_LIGHT1);
   glEnable(GL_DEPTH_TEST);
+  glEnable(GL_RESCALE_NORMAL);
 
   //Set lighting parameters
-  GLfloat light_position0[] = {1.0, 0.0, -1.0, 0};
+  GLfloat light_position0[] = {0.0, 0.0, -1.0, 0};
   GLfloat light_ambient0[] = {0, 0, 0, 1};
   GLfloat light_diffuse0[] = {1.0, 1.0, 1.0, 1};
   GLfloat light_specular0[] = {1.0, 1.0, 1.0, 1};
@@ -136,11 +163,25 @@ void initScene(){
   glLightf(GL_LIGHT0, GL_LINEAR_ATTENUATION, 0.0);
   glLightf(GL_LIGHT0, GL_QUADRATIC_ATTENUATION, 0.0);
 
+  GLfloat light_position1[] = {0.0, 0.0, 1.0, 0};
+  GLfloat light_ambient1[] = {0, 0, 0, 1};
+  GLfloat light_diffuse1[] = {1.0, 1.0, 1.0, 1};
+  GLfloat light_specular1[] = {1.0, 1.0, 1.0, 1};
+
+  glLightfv(GL_LIGHT1, GL_POSITION, light_position1);
+  glLightfv(GL_LIGHT1, GL_AMBIENT, light_ambient1);
+  glLightfv(GL_LIGHT1, GL_DIFFUSE, light_diffuse1);
+  glLightfv(GL_LIGHT1, GL_SPECULAR, light_specular1);
+
+  glLightf(GL_LIGHT1, GL_CONSTANT_ATTENUATION, 1.0);
+  glLightf(GL_LIGHT1, GL_LINEAR_ATTENUATION, 0.0);
+  glLightf(GL_LIGHT1, GL_QUADRATIC_ATTENUATION, 0.0);
+
   //Set Material Parameters
   GLfloat ambient_color[] = { 0.0, 0.0, 0.0, 1.0 };
   GLfloat diffuse_color[] = { 0.0, 0.3, 0.3, 1.0 };
-  GLfloat specular_color[] = { 1.0, 1.0, 1.0, 1.0 };
-  GLfloat shininess[] = { 2.0 };
+  GLfloat specular_color[] = { 0.0, 0.0, 0.0, 1.0 };
+  GLfloat shininess[] = { 50.0 };
   GLfloat emission[] = {0, 0, 0, 1};
 
   glMaterialfv(GL_FRONT_AND_BACK, GL_AMBIENT, ambient_color);
@@ -149,11 +190,8 @@ void initScene(){
   glMaterialfv(GL_FRONT_AND_BACK, GL_SHININESS, shininess);
   glMaterialfv(GL_FRONT_AND_BACK, GL_EMISSION, emission);
 
-  glEnable(GL_BLEND);
-  glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-
-  // Enable shading
-  glShadeModel(GL_SMOOTH);
+  //glEnable(GL_BLEND);
+  //glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
   myReshape(viewport.w,viewport.h);
 }
@@ -168,7 +206,24 @@ void myDisplay() {
   glMatrixMode(GL_MODELVIEW);			    // indicate we are specifying camera transformations
   glLoadIdentity();				            // make sure transformation is "zero'd"
 
-  glRotatef(270, 1, 0, 0);
+  if (wireframe) {
+    glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+  } else {
+    glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+  }
+
+  // Enable shading
+  if (flat) {
+    glShadeModel(GL_FLAT);
+  } else {
+    glShadeModel(GL_SMOOTH);
+  }
+
+  glScalef(scale_x, scale_y, scale_z); //Scale for Zooming in
+  glRotatef(rotate_x, 1, 0, 0); // Rotation X
+  glRotatef(rotate_y, 0, 1, 0); // Rotation Y
+  glRotatef(rotate_z, 0, 0, 1); // Rotation Z
+  glTranslatef(translate_x, translate_y, translate_z); //Translate for translations
 
   // Start drawing
   for(vector<vector<pair<ThreeDVector*, ThreeDVector*> > >::iterator it = polygons.begin(); it != polygons.end(); ++it) {
@@ -315,22 +370,6 @@ void uniform_subdivide(BezSurface* surface) {
 }
 
 void generatePolygons() {
-
-  /*
-  vector<pair<ThreeDVector*, ThreeDVector*> > polygon;
-  polygon.push_back(make_pair(new ThreeDVector(0, 0, -1), new ThreeDVector(-1.0, 1.0, 0)));
-  polygon.push_back(make_pair(new ThreeDVector(0, 0, -1), new ThreeDVector(1.0, 1.0, 0)));
-  polygon.push_back(make_pair(new ThreeDVector(0, 0, 1), new ThreeDVector(1.0, -1.0, 0)));
-  polygon.push_back(make_pair(new ThreeDVector(0, 0, 1), new ThreeDVector(-1.0, -1.0, 0)));
-  polygons.push_back(polygon);
-
-  vector<pair<ThreeDVector*, ThreeDVector*> > polygon2;
-  polygon2.push_back(make_pair(new ThreeDVector(0, 0, -1), new ThreeDVector(-3.0, -1.0, 0)));
-  polygon2.push_back(make_pair(new ThreeDVector(0, 0, -1), new ThreeDVector(-1.0, -1.0, 0)));
-  polygon2.push_back(make_pair(new ThreeDVector(0, 0, -1), new ThreeDVector(-1.0, -3.0, 0)));
-  polygon2.push_back(make_pair(new ThreeDVector(0, 0, -1), new ThreeDVector(-3.0, -3.0, 0)));
-  polygons.push_back(polygon2);
-  */
   if (adaptive) {
 
   } else {
@@ -344,16 +383,20 @@ void generatePolygons() {
 void myKeyboardFunc(unsigned char key, int x, int y){
   switch(key){
     case KEY_S:
-      print("Toggle");
+      flat = !flat;
       break;
     case KEY_W:
-      print("Wireframe");
+      wireframe = !wireframe;
       break;
     case KEY_PLUS:
-      print("Zoom In");
+      scale_x = max(scale_x + scale_step, scale_step);
+      scale_y = max(scale_y + scale_step, scale_step);
+      scale_z = max(scale_z + scale_step, scale_step);
       break;
     case KEY_MINUS:
-      print("Zoom Out");
+      scale_x = max(scale_x - scale_step, scale_step);
+      scale_y = max(scale_y - scale_step, scale_step);
+      scale_z = max(scale_z - scale_step, scale_step);
       break;
     case KEY_H:
       print("Hidden Line");
@@ -361,6 +404,7 @@ void myKeyboardFunc(unsigned char key, int x, int y){
     default:
       break;
   }
+  glutPostRedisplay(); // forces glut to call the display function (myDisplay())
 }
 
 void mySpecialKeyFunc(int key, int x, int y){
@@ -368,35 +412,36 @@ void mySpecialKeyFunc(int key, int x, int y){
   switch(key){
     case GLUT_KEY_UP:
       if (shift) {
-        print("Translate Up");
+        translate_y += translate_step;
       } else {
-        print("Rotate Up");
+        rotate_x += rotation_step;
       }
       break;
     case GLUT_KEY_DOWN:
       if (shift) {
-          print("Translate Down");
+          translate_y -= translate_step;
         } else {
-        print("Rotate Down");
+        rotate_x -= rotation_step;
       }
       break;
     case GLUT_KEY_LEFT:
       if (shift) {
-        print("Translate Left");
+        translate_x -= translate_step;
       } else {
-        print("Rotate Left");
+        rotate_y -= rotation_step;
       }
       break;
     case GLUT_KEY_RIGHT:
       if (shift) {
-        print("Translate Right");
+        translate_x += translate_step;
       } else {
-        print("Rotate Right");
+        rotate_y += rotation_step;
       }
       break;
     default:
       break;
   }
+  glutPostRedisplay(); // forces glut to call the display function (myDisplay())
 }
 
 int main(int argc, char *argv[]) {
