@@ -34,6 +34,7 @@
 #define KEY_PLUS 43
 #define KEY_MINUS 45
 #define KEY_H 104
+#define KEY_P 112
 
 #define scale_step 0.05
 #define translate_step 0.05
@@ -87,6 +88,9 @@ bool wireframe = false;
 
 //bool for flat shading
 bool flat = false;
+
+//Counter for printing
+int counter = 0;
 
 //Print Function for debugging
 void print(string _string) {
@@ -400,6 +404,21 @@ void myKeyboardFunc(unsigned char key, int x, int y){
     case KEY_H:
       print("Hidden Line");
       break;
+    case KEY_P:
+      {
+      int w = glutGet(GLUT_WINDOW_WIDTH);
+      int h = glutGet(GLUT_WINDOW_HEIGHT);
+      vector<unsigned char> buf(w * h * 4);
+
+      glPixelStorei(GL_PACK_ALIGNMENT, 1);
+      glReadPixels(0, 0, w, h, GL_RGBA, GL_UNSIGNED_BYTE, &buf[0] );
+
+      char* name = new char[1000];
+      sprintf(name, "image%d.png", counter);
+      createPng(name, buf, w, h);
+      counter++;
+      break;
+      }
     default:
       break;
   }
