@@ -207,7 +207,7 @@ void myDisplay() {
   glLoadIdentity();				            // make sure transformation is "zero'd"
 
   if (wireframe) {
-    glPolygonMode(GL_BACK, GL_LINE);
+    glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
   } else {
     glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
   }
