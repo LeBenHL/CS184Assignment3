@@ -144,7 +144,7 @@ void initScene(){
   // Enable lighting and the light we have set up
   glEnable(GL_LIGHTING);
   glEnable(GL_LIGHT0);
-  glEnable(GL_LIGHT1);
+  //glEnable(GL_LIGHT1);
   glEnable(GL_DEPTH_TEST);
   glEnable(GL_RESCALE_NORMAL);
 
@@ -180,7 +180,7 @@ void initScene(){
   //Set Material Parameters
   GLfloat ambient_color[] = { 0.0, 0.0, 0.0, 1.0 };
   GLfloat diffuse_color[] = { 0.0, 0.3, 0.3, 1.0 };
-  GLfloat specular_color[] = { 0.0, 0.0, 0.0, 1.0 };
+  GLfloat specular_color[] = { 0.3, 0.3, 0.3, 1.0 };
   GLfloat shininess[] = { 50.0 };
   GLfloat emission[] = {0, 0, 0, 1};
 
@@ -201,13 +201,13 @@ void initScene(){
 //***************************************************
 void myDisplay() {
 
-  glClear(GL_COLOR_BUFFER_BIT);				// clear the color buffer
+  glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);				// clear the color buffer
 
   glMatrixMode(GL_MODELVIEW);			    // indicate we are specifying camera transformations
   glLoadIdentity();				            // make sure transformation is "zero'd"
 
   if (wireframe) {
-    glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+    glPolygonMode(GL_BACK, GL_LINE);
   } else {
     glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
   }
@@ -238,7 +238,6 @@ void myDisplay() {
     }
     glEnd();
   }
-  //glutSolidSphere(5.0, 100, 100);
 
   if (save) {
     int w = glutGet(GLUT_WINDOW_WIDTH);
@@ -482,8 +481,8 @@ int main(int argc, char *argv[]) {
   //This initializes glut
   glutInit(&argc, argv);
 
-  //This tells glut to use a double-buffered window with red, green, and blue channels 
-  glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGB);
+  //This tells glut to use a double-buffered window with red, green, and blue channels. Add Depth Chanels
+  glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGB | GLUT_DEPTH);
 
   // Initalize theviewport size
   viewport.w = 400;
