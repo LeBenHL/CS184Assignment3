@@ -46,7 +46,7 @@ using namespace std;
 double subdivision_parameter;
 
 //The file we are parsing
-char* bez_file;
+char* file_to_parse;
 
 //How many surfaces the file contains
 int num_surfaces;
@@ -107,6 +107,94 @@ void createPng(const char* filename, std::vector<unsigned char>& image, unsigned
   if(error) std::cout << "encoder error " << error << ": "<< lodepng_error_text(error) << std::endl;
 }
 
+void parseObj(const char* filename) {
+  cout << "Parsing Object File" << endl;
+  
+  vector<ThreeDVector*> vertices;
+
+  std::ifstream inpfile(filename);
+  if(!inpfile.is_open()) {
+    std::cout << "Unable to open file" << std::endl;
+  } else {
+    std::string line;
+    //MatrixStack mst;
+    
+    while(inpfile.good()) {
+      std::vector<std::string> splitline;
+      std::string buf;
+
+      std::getline(inpfile,line);
+      std::stringstream ss(line);
+
+      while (ss >> buf) {
+        splitline.push_back(buf);
+      }
+      //Ignore blank lines
+      if(splitline.size() == 0) {
+        continue;
+      }
+      //Valid commands:
+      //v x y z [w]
+      else if(!splitline[0].compare("v")) {
+        long double x = atof(splitline[1].c_str());
+        long double y = atof(splitline[2].c_str());
+        long double z = atof(splitline[3].c_str());
+        ThreeDVector* vertex = new ThreeDVector(x, y, z);
+        vertices.push_back(vertex);
+      }
+      //f v1 v2 v3 v4 ....
+      //We assume they are all triangles defined with 3 vertices
+      //Most files seem to be like this
+      //1 indexed vertices so we need to add 1
+      else if(!splitline[0].compare("f")) {
+        const char* v1 = splitline[1].c_str();
+        const char* v2 = splitline[2].c_str();
+        const char* v3 = splitline[3].c_str();
+        char v1_str[500];
+        char v2_str[500];
+        char v3_str[500];
+        strncpy(v1_str, v1, sizeof(v1_str));
+        strncpy(v2_str, v2, sizeof(v2_str));
+        strncpy(v3_str, v3, sizeof(v3_str));
+        int v1_index = atoi(strtok(v1_str, "\\")) - 1;
+        int v2_index = atoi(strtok(v2_str, "\\")) - 1;
+        int v3_index = atoi(strtok(v3_str, "\\")) - 1;
+        int max_v1_v2 = max(v1_index, v2_index);
+        int max_v1_v2_v3 = max(max_v1_v2, v3_index);
+        if (vertices.size() < max_v1_v2_v3 + 1) {
+          cerr << "Tried to access vertex that was not defined yet" << endl;
+          exit(1);
+        }
+        ThreeDVector* v1_vector = vertices[v1_index];
+        ThreeDVector* v2_vector = vertices[v2_index];
+        ThreeDVector* v3_vector = vertices[v3_index];
+
+        ThreeDVector* normal;
+        ThreeDVector* v2_minus_v1 = v2_vector->vector_subtract(v1_vector);
+        ThreeDVector* v3_minus_v1 = v3_vector->vector_subtract(v1_vector);
+        normal = v2_minus_v1->cross_product(v3_minus_v1);
+        normal->normalize_bang();
+
+        delete v2_minus_v1;
+        delete v3_minus_v1;
+
+        pair<ThreeDVector*, ThreeDVector*> first_vertex = std::make_pair(v1_vector, normal);
+        pair<ThreeDVector*, ThreeDVector*> second_vertex = std::make_pair(v2_vector, normal);
+        pair<ThreeDVector*, ThreeDVector*> third_vertex = std::make_pair(v3_vector, normal);
+
+        vector<pair<ThreeDVector*, ThreeDVector*> > polygon;
+        polygon.push_back(first_vertex);
+        polygon.push_back(second_vertex);
+        polygon.push_back(third_vertex);
+
+        polygons.push_back(polygon);
+      }
+    }
+  }
+
+  vertices.clear();
+}
+
 //****************************************************
 // Some Classes
 //****************************************************
@@ -122,7 +210,7 @@ class Viewport {
 //****************************************************
 // Global Variables
 //****************************************************
-Viewport	viewport;
+Viewport  viewport;
 
 //****************************************************
 // reshape viewport if the window is resized
@@ -205,10 +293,10 @@ void initScene(){
 //***************************************************
 void myDisplay() {
 
-  glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);				// clear the color buffer
+  glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);       // clear the color buffer
 
-  glMatrixMode(GL_MODELVIEW);			    // indicate we are specifying camera transformations
-  glLoadIdentity();				            // make sure transformation is "zero'd"
+  glMatrixMode(GL_MODELVIEW);         // indicate we are specifying camera transformations
+  glLoadIdentity();                   // make sure transformation is "zero'd"
 
   if (wireframe) {
     glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
@@ -255,7 +343,7 @@ void myDisplay() {
   }
 
   glFlush();
-  glutSwapBuffers();					// swap buffers (we earlier set double buffer)
+  glutSwapBuffers();          // swap buffers (we earlier set double buffer)
 }
 
 
@@ -294,7 +382,7 @@ void parseBez(const char* filename) {
         num_surfaces = atoi(splitline[0].c_str());
         line_count++;
       //Control Point Parsing
-      } else if(line_count > 1) {
+      } else if (line_count > 1) {
         int curve_index = (line_count - 2) % 4;
         long double x1, x2, x3, x4, y1, y2, y3, y4, z1, z2, z3, z4;
         x1 = atof(splitline[0].c_str());
@@ -464,35 +552,57 @@ void mySpecialKeyFunc(int key, int x, int y){
 
 int main(int argc, char *argv[]) {
 
-  if (argc < 3) {
-    cout << "USAGE: ./as3 [bez file] [subdivision parameter] [flags]" << endl;
+  if (argc < 2) {
+    cout << "USAGE: ./as3 [bez file] [subdivision parameter] [flags] OR ./as3 [obj file] [optional flags]" << endl;
     exit(1);
   }
 
-  bez_file = argv[1];
-  subdivision_parameter = atof(argv[2]);
+  file_to_parse = argv[1];
+  string fn = file_to_parse;
+  bool isBez = fn.substr(fn.find_last_of(".") + 1) == "bez";
 
+  if (isBez) {
+    if (argc < 3) {
+      cout << "USAGE: ./as3 [bez file] [subdivision parameter] [flags]" << endl;
+      exit(1);
+    }
 
-  for (int i = 3; i < argc; i++) {
-    if (string(argv[i]) == "-a") {
-      adaptive = true;
-    } else if (string(argv[i]) == "-u") {
-      adaptive = false;
-    } else if (string(argv[i]) == "-save") {
-      if(i + 1 < argc){
-        save = true;
-        file_name = argv[i + 1];
-        i = i + 1;
+    subdivision_parameter = atof(argv[2]);
+    for (int i = 3; i < argc; i++) {
+      if (string(argv[i]) == "-a") {
+        adaptive = true;
+      } else if (string(argv[i]) == "-u") {
+        adaptive = false;
+      } else if (string(argv[i]) == "-save") {
+        if(i + 1 < argc){
+          save = true;
+          file_name = argv[i + 1];
+          i = i + 1;
+        }
       }
     }
-  }
 
-  parseBez(bez_file);
+    if (adaptive) {
+      cout << "Adaptive" << endl;
+    } else {
+      cout << "Uniform" << endl;
+    }
 
-  if (adaptive) {
-    cout << "Adaptive" << endl;
+    parseBez(file_to_parse);
   } else {
-    cout << "Uniform" << endl;
+    //We are now dealing with .obj files
+
+    for (int i = 2; i < argc; i++) {
+      if (string(argv[i]) == "-save") {
+        if(i + 1 < argc){
+          save = true;
+          file_name = argv[i + 1];
+          i = i + 1;
+        }
+      }
+    }
+
+    parseObj(file_to_parse);
   }
 
   generatePolygons();
@@ -512,14 +622,14 @@ int main(int argc, char *argv[]) {
   glutInitWindowPosition(0,0);
   glutCreateWindow(argv[0]);
 
-  initScene();							// quick function to set up scene
+  initScene();              // quick function to set up scene
 
-  glutDisplayFunc(myDisplay);				// function to run when its time to draw something
-  glutReshapeFunc(myReshape);				// function to run when the window gets resized
+  glutDisplayFunc(myDisplay);       // function to run when its time to draw something
+  glutReshapeFunc(myReshape);       // function to run when the window gets resized
   glutKeyboardFunc(myKeyboardFunc); // basic keys callback
   glutSpecialFunc(mySpecialKeyFunc); //special keys callback
 
-  glutMainLoop();							// infinite loop that will keep drawing and resizing
+  glutMainLoop();             // infinite loop that will keep drawing and resizing
   // and whatever else
 
   return 0;
