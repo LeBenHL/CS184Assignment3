@@ -94,3 +94,9 @@ char* ThreeDVector::repr() {
 	sprintf(buffer, "<ThreeDVector, x = %0.2Lf, y = %0.2Lf, z = %0.2Lf>", this->x, this->y, this->z);
 	return buffer;
 }
+
+char* ThreeDVector::print() {
+	char* buffer = new char[1000];
+	sprintf(buffer, "%0.2Lf %0.2Lf %0.2Lf", this->x, this->y, this->z);
+	return buffer;
+}

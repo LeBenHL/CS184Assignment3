@@ -22,6 +22,7 @@ class ThreeDVector{
 		ThreeDVector* clone();
 		void transform_bang(Eigen::Matrix4f transformation, bool point);
 		char* repr();
+		char* print();
 };
 
 #endif

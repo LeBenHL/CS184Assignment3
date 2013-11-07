@@ -67,6 +67,10 @@ vector<vector<pair<ThreeDVector*, ThreeDVector*> > > polygons;
 bool save = false;
 //Filename
 static const char* file_name;
+//Obj Save Boolean
+bool obj_save = false;
+static const char* obj_file_name;
+static int line_counter = 0;
 
 //Scale Multipliers for Zoom
 double scale_x = 1;
@@ -281,6 +285,9 @@ void initScene(){
 // function that does the actual drawing of stuff
 //***************************************************
 void myDisplay() {
+  if (obj_save) {
+    exit(0);
+  }
 
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);       // clear the color buffer
 
@@ -429,6 +436,9 @@ void uniform_subdivide(BezSurface* surface) {
     }
   }
 
+  ofstream myfile;
+  myfile.open (obj_file_name, ios::out | ios::app);
+
   //Interpolate the polygons from this surface_point mesh
   for (int u = 0; u < num_subdivisions; u++) {
 
@@ -438,6 +448,23 @@ void uniform_subdivide(BezSurface* surface) {
       pair<ThreeDVector*, ThreeDVector*> LR = surface_points[u][v + 1];
       pair<ThreeDVector*, ThreeDVector*> LL = surface_points[u][v];
 
+      myfile << "v " << UL.first->print() << endl;
+      myfile << "v " << UR.first->print() << endl;
+      myfile << "v " << LR.first->print() << endl;
+      myfile << "v " << LL.first->print() << endl;
+
+      myfile << "vn " << UL.second->print() << endl;
+      myfile << "vn " << UR.second->print() << endl;
+      myfile << "vn " << LR.second->print() << endl;
+      myfile << "vn " << LL.second->print() << endl;
+
+      myfile << "f " << line_counter+1 << "//" << line_counter+1;
+      myfile << " " << line_counter+2 << "//" << line_counter+2;
+      myfile << " " << line_counter+3 << "//" << line_counter+3;
+      myfile << " " << line_counter+4 << "//" << line_counter+4 << endl;
+
+      line_counter += 4;
+
       vector<pair<ThreeDVector*, ThreeDVector*> > polygon;
       polygon.push_back(UL);
       polygon.push_back(UR);
@@ -446,6 +473,8 @@ void uniform_subdivide(BezSurface* surface) {
       polygons.push_back(polygon);
     }
   }
+
+  myfile.close();
 
 }
 
@@ -566,6 +595,12 @@ int main(int argc, char *argv[]) {
         if(i + 1 < argc){
           save = true;
           file_name = argv[i + 1];
+          i = i + 1;
+        }
+      }else if (string(argv[i]) == "-o"){
+        if(i + 1 < argc){
+          obj_save = true;
+          obj_file_name = argv[i + 1];
           i = i + 1;
         }
       }
