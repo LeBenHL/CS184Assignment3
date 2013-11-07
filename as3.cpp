@@ -548,9 +548,9 @@ int main(int argc, char *argv[]) {
 
   file_to_parse = argv[1];
   string fn = file_to_parse;
-  bool isBez = fn.substr(fn.find_last_of(".") + 1) == "bez";
+  string ext = fn.substr(fn.find_last_of(".") + 1);
 
-  if (isBez) {
+  if (ext == "bez") {
     if (argc < 3) {
       cout << "USAGE: ./as3 [bez file] [subdivision parameter] [flags]" << endl;
       exit(1);
@@ -578,7 +578,7 @@ int main(int argc, char *argv[]) {
     }
 
     parseBez(file_to_parse);
-  } else {
+  } else if(ext == "obj"){
     //We are now dealing with .obj files
 
     for (int i = 2; i < argc; i++) {
@@ -592,6 +592,9 @@ int main(int argc, char *argv[]) {
     }
 
     parseObj(file_to_parse);
+  } else {
+    cout << "File Format Not Supported: " << argv[1] << endl;
+    exit(1);
   }
 
   generatePolygons();
