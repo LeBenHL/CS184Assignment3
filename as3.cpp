@@ -70,7 +70,6 @@ static const char* file_name;
 //Obj Save Boolean
 bool obj_save = false;
 static const char* obj_file_name;
-static int line_counter = 0;
 
 //Scale Multipliers for Zoom
 double scale_x = 1;
@@ -188,6 +187,38 @@ void parseObj(const char* filename) {
   vertices.clear();
 }
 
+void saveToOBJFile(){
+  ofstream file;
+  file.open (obj_file_name, ios::out | ios::trunc);
+
+  int polygon_start = 0;
+  int polygon_end = 0;
+
+  for(vector<vector<pair<ThreeDVector*, ThreeDVector*> > >::iterator it = polygons.begin(); it != polygons.end(); ++it) {
+
+    polygon_start = polygon_end;
+    vector<pair<ThreeDVector*, ThreeDVector*> > polygon = *it;
+    
+    for(vector<pair<ThreeDVector*, ThreeDVector*> >::iterator i = polygon.begin(); i != polygon.end(); ++i) {
+      pair<ThreeDVector*, ThreeDVector*> vertex_pair = *i;
+      ThreeDVector* vertex = vertex_pair.first;
+      ThreeDVector* normal = vertex_pair.second;
+
+      file << "v " << vertex->print() << endl;
+      file << "vn " << normal->print() << endl;
+      polygon_end++;
+    }
+
+    file << "f";
+    for(int i = polygon_start; i < polygon_end; i++){
+      file << " " << i+1 << "//" << i+1;
+    }
+    file << endl;
+  }
+
+  file.close();
+}
+
 //****************************************************
 // Some Classes
 //****************************************************
@@ -285,7 +316,8 @@ void initScene(){
 // function that does the actual drawing of stuff
 //***************************************************
 void myDisplay() {
-  if (obj_save) {
+  if(obj_save){
+    saveToOBJFile();
     exit(0);
   }
 
@@ -436,9 +468,6 @@ void uniform_subdivide(BezSurface* surface) {
     }
   }
 
-  ofstream myfile;
-  myfile.open (obj_file_name, ios::out | ios::app);
-
   //Interpolate the polygons from this surface_point mesh
   for (int u = 0; u < num_subdivisions; u++) {
 
@@ -448,23 +477,6 @@ void uniform_subdivide(BezSurface* surface) {
       pair<ThreeDVector*, ThreeDVector*> LR = surface_points[u][v + 1];
       pair<ThreeDVector*, ThreeDVector*> LL = surface_points[u][v];
 
-      myfile << "v " << UL.first->print() << endl;
-      myfile << "v " << UR.first->print() << endl;
-      myfile << "v " << LR.first->print() << endl;
-      myfile << "v " << LL.first->print() << endl;
-
-      myfile << "vn " << UL.second->print() << endl;
-      myfile << "vn " << UR.second->print() << endl;
-      myfile << "vn " << LR.second->print() << endl;
-      myfile << "vn " << LL.second->print() << endl;
-
-      myfile << "f " << line_counter+1 << "//" << line_counter+1;
-      myfile << " " << line_counter+2 << "//" << line_counter+2;
-      myfile << " " << line_counter+3 << "//" << line_counter+3;
-      myfile << " " << line_counter+4 << "//" << line_counter+4 << endl;
-
-      line_counter += 4;
-
       vector<pair<ThreeDVector*, ThreeDVector*> > polygon;
       polygon.push_back(UL);
       polygon.push_back(UR);
@@ -473,9 +485,6 @@ void uniform_subdivide(BezSurface* surface) {
       polygons.push_back(polygon);
     }
   }
-
-  myfile.close();
-
 }
 
 void generatePolygons() {
