@@ -1,6 +1,7 @@
 #include <cmath>
 #include "three_d_vector.h"
 #include <iostream>
+#include <cfloat>
 using namespace std;
 
 ThreeDVector::ThreeDVector(long double _x, long double _y, long double _z) {

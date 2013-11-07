@@ -166,14 +166,16 @@ void parseObj(const char* filename) {
           const char* v = splitline[i].c_str();
           char v_str[500];
           strncpy(v_str, v, sizeof(v_str));
-          char *p = std::strtok(v_str, "/");
           vector<int> vector_of_indices; 
-          while (p!=0){
-            vector_of_indices.push_back(atoi(p)-1);
-            p = strtok(NULL,"/");
-          }
+          char *pch = std::strtok(v_str, "/");
+          int last = 0;
+          while (pch != NULL){
+            last++;
+            vector_of_indices.push_back(atoi(pch) - 1);
+            pch = strtok(NULL,"/");
+          }  
           ThreeDVector* vertex = vertices[vector_of_indices[0]];
-          ThreeDVector* normal = vertices_normals[vector_of_indices[2]];
+          ThreeDVector* normal = vertices_normals[vector_of_indices[last-1]];
 
           pair<ThreeDVector*, ThreeDVector*> pair = std::make_pair(vertex, normal);
           polygon.push_back(pair);
@@ -183,7 +185,7 @@ void parseObj(const char* filename) {
       }
     }
   }
-
+  
   vertices.clear();
 }
 
@@ -198,7 +200,7 @@ void saveToOBJFile(){
 
     polygon_start = polygon_end;
     vector<pair<ThreeDVector*, ThreeDVector*> > polygon = *it;
-    
+
     for(vector<pair<ThreeDVector*, ThreeDVector*> >::iterator i = polygon.begin(); i != polygon.end(); ++i) {
       pair<ThreeDVector*, ThreeDVector*> vertex_pair = *i;
       ThreeDVector* vertex = vertex_pair.first;
