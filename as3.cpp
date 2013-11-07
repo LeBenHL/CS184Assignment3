@@ -111,6 +111,7 @@ void parseObj(const char* filename) {
   cout << "Parsing Object File" << endl;
   
   vector<ThreeDVector*> vertices;
+  vector<ThreeDVector*> vertices_normals;
 
   std::ifstream inpfile(filename);
   if(!inpfile.is_open()) {
@@ -142,50 +143,38 @@ void parseObj(const char* filename) {
         ThreeDVector* vertex = new ThreeDVector(x, y, z);
         vertices.push_back(vertex);
       }
+      //vn x y z
+      else if(!splitline[0].compare("vn")) {
+        long double x = atof(splitline[1].c_str());
+        long double y = atof(splitline[2].c_str());
+        long double z = atof(splitline[3].c_str());
+        ThreeDVector* normal = new ThreeDVector(x, y, z);
+        normal->normalize_bang();
+        vertices_normals.push_back(normal);
+      }
       //f v1 v2 v3 v4 ....
       //We assume they are all triangles defined with 3 vertices
       //Most files seem to be like this
       //1 indexed vertices so we need to add 1
       else if(!splitline[0].compare("f")) {
-        const char* v1 = splitline[1].c_str();
-        const char* v2 = splitline[2].c_str();
-        const char* v3 = splitline[3].c_str();
-        char v1_str[500];
-        char v2_str[500];
-        char v3_str[500];
-        strncpy(v1_str, v1, sizeof(v1_str));
-        strncpy(v2_str, v2, sizeof(v2_str));
-        strncpy(v3_str, v3, sizeof(v3_str));
-        int v1_index = atoi(strtok(v1_str, "\\")) - 1;
-        int v2_index = atoi(strtok(v2_str, "\\")) - 1;
-        int v3_index = atoi(strtok(v3_str, "\\")) - 1;
-        int max_v1_v2 = max(v1_index, v2_index);
-        int max_v1_v2_v3 = max(max_v1_v2, v3_index);
-        if (vertices.size() < max_v1_v2_v3 + 1) {
-          cerr << "Tried to access vertex that was not defined yet" << endl;
-          exit(1);
-        }
-        ThreeDVector* v1_vector = vertices[v1_index];
-        ThreeDVector* v2_vector = vertices[v2_index];
-        ThreeDVector* v3_vector = vertices[v3_index];
-
-        ThreeDVector* normal;
-        ThreeDVector* v2_minus_v1 = v2_vector->vector_subtract(v1_vector);
-        ThreeDVector* v3_minus_v1 = v3_vector->vector_subtract(v1_vector);
-        normal = v2_minus_v1->cross_product(v3_minus_v1);
-        normal->normalize_bang();
-
-        delete v2_minus_v1;
-        delete v3_minus_v1;
-
-        pair<ThreeDVector*, ThreeDVector*> first_vertex = std::make_pair(v1_vector, normal);
-        pair<ThreeDVector*, ThreeDVector*> second_vertex = std::make_pair(v2_vector, normal);
-        pair<ThreeDVector*, ThreeDVector*> third_vertex = std::make_pair(v3_vector, normal);
-
         vector<pair<ThreeDVector*, ThreeDVector*> > polygon;
-        polygon.push_back(first_vertex);
-        polygon.push_back(second_vertex);
-        polygon.push_back(third_vertex);
+
+        for(int i = 1; i < splitline.size(); i++){
+          const char* v = splitline[i].c_str();
+          char v_str[500];
+          strncpy(v_str, v, sizeof(v_str));
+          char *p = std::strtok(v_str, "/");
+          vector<int> vector_of_indices; 
+          while (p!=0){
+            vector_of_indices.push_back(atoi(p)-1);
+            p = strtok(NULL,"/");
+          }
+          ThreeDVector* vertex = vertices[vector_of_indices[0]];
+          ThreeDVector* normal = vertices_normals[vector_of_indices[2]];
+
+          pair<ThreeDVector*, ThreeDVector*> pair = std::make_pair(vertex, normal);
+          polygon.push_back(pair);
+        }
 
         polygons.push_back(polygon);
       }
