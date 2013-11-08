@@ -29,7 +29,7 @@ bez_curve.o: bez_curve.h bez_curve.cpp three_d_vector.h
 	$(CC) $(CFLAGS) $(INCLUDE) $(FLAGS) -c bez_curve.cpp -o bez_curve.o
 adaptive_point.o: adaptive_point.h adaptive_point.cpp three_d_vector.h
 	$(CC) $(CFLAGS) $(INCLUDE) $(FLAGS) -c adaptive_point.cpp -o adaptive_point.o
-adaptive_triangle.o: adaptive_triangle.h adaptive_point.h adaptive_triangle.cpp
+adaptive_triangle.o: adaptive_triangle.h adaptive_point.h adaptive_triangle.cpp bez_surface.h
 	$(CC) $(CFLAGS) $(INCLUDE) $(FLAGS) -c adaptive_triangle.cpp -o adaptive_triangle.o
 clean: 
 	$(RM) *.o as1

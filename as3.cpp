@@ -513,7 +513,7 @@ void adaptive_subdivide(BezSurface* surface) {
 
   while (!queue.empty()) {
     AdaptiveTriangle* triangle = queue.front();
-    if (!triangle->split(&queue)) {
+    if (!triangle->split(&queue, subdivision_parameter, surface)) {
       //Triangle was not split! Add to our polygons vector
       vector<pair<ThreeDVector*, ThreeDVector*> > polygon;
       pair<ThreeDVector*, ThreeDVector*> A = make_pair(new ThreeDVector(triangle->a->x, triangle->a->y, triangle->a->z), triangle->a->normal);

@@ -2,8 +2,12 @@
 #define ADAPTIVETRIANGLE_H
 
 #include "adaptive_point.h"
+#include "bez_surface.h"
 #include <queue>
 #include <vector>
+#include <iostream>
+
+using namespace std;
 
 class AdaptiveTriangle {
 	public:
@@ -13,7 +17,7 @@ class AdaptiveTriangle {
 		AdaptivePoint* c;
 
 		AdaptiveTriangle(AdaptivePoint* _a, AdaptivePoint* _b, AdaptivePoint* _c);
-		bool split(std::queue<AdaptiveTriangle*>* queue);
+		bool split(std::queue<AdaptiveTriangle*>* queue, long double subdivision_parameter, BezSurface* surface);
 		~AdaptiveTriangle();
 
 };

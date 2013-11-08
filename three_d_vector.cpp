@@ -76,6 +76,10 @@ long double ThreeDVector::distance(ThreeDVector* v) {
 	return sqrt(pow(this->x - v->x, 2) + pow(this->y - v->y, 2) + pow(this->z - v->z, 2));
 }
 
+ThreeDVector* ThreeDVector::midpoint(ThreeDVector* v) {
+	return new ThreeDVector((this->x + v->x)/2, (this->y + v->y)/2, (this->z + v->z/2));
+}
+
 ThreeDVector* ThreeDVector::clone(){
 	return new ThreeDVector(this->x, this->y, this->z);
 }
