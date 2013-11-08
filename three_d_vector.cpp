@@ -72,6 +72,10 @@ ThreeDVector* ThreeDVector::cross_product(ThreeDVector* v){
 	return new ThreeDVector(this->y * v->z - this->z * v->y, this->z * v->x - this->x * v->z, this->x * v->y - this->y * v->x);                                                                         
 }
 
+long double ThreeDVector::distance(ThreeDVector* v) {
+	return sqrt(pow(this->x - v->x, 2) + pow(this->y - v->y, 2) + pow(this->z - v->z, 2));
+}
+
 ThreeDVector* ThreeDVector::clone(){
 	return new ThreeDVector(this->x, this->y, this->z);
 }
