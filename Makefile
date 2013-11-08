@@ -1,4 +1,4 @@
-OBJS = as3.o three_d_vector.o bez_surface.o bez_curve.o lodepng.o
+OBJS = as3.o three_d_vector.o bez_surface.o bez_curve.o lodepng.o adaptive_point.o adaptive_triangle.o
 CC = g++
 INCLUDE = -I ./
 FLAGS = -O2
@@ -27,6 +27,10 @@ bez_surface.o: bez_surface.h bez_surface.cpp three_d_vector.h bez_curve.h
 	$(CC) $(CFLAGS) $(INCLUDE) $(FLAGS) -c bez_surface.cpp -o bez_surface.o
 bez_curve.o: bez_curve.h bez_curve.cpp three_d_vector.h
 	$(CC) $(CFLAGS) $(INCLUDE) $(FLAGS) -c bez_curve.cpp -o bez_curve.o
+adaptive_point.o: adaptive_point.h adaptive_point.cpp three_d_vector.h
+	$(CC) $(CFLAGS) $(INCLUDE) $(FLAGS) -c adaptive_point.cpp -o adaptive_point.o
+adaptive_triangle.o: adaptive_triangle.h adaptive_point.h adaptive_triangle.cpp
+	$(CC) $(CFLAGS) $(INCLUDE) $(FLAGS) -c adaptive_triangle.cpp -o adaptive_triangle.o
 clean: 
 	$(RM) *.o as1
  

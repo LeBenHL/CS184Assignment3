@@ -1,5 +1,6 @@
 
 #include <vector>
+#include <queue>
 #include <sstream>
 #include <iostream>
 #include <fstream>
@@ -26,6 +27,8 @@
 #include "three_d_vector.h"
 #include "bez_surface.h"
 #include "lodepng.h"
+#include "adaptive_triangle.h"
+#include "bez_curve.h"
 
 
 #define PI 3.14159265  // Should be used from mathlib
@@ -489,9 +492,48 @@ void uniform_subdivide(BezSurface* surface) {
   }
 }
 
+void adaptive_subdivide(BezSurface* surface) {
+  //Generating Inital Points
+  queue<AdaptiveTriangle*> queue;
+
+  pair<ThreeDVector*, ThreeDVector*> point1 = surface->interpolate(0, 0);
+  AdaptivePoint* adaptive_point1 = new AdaptivePoint(point1.first, 0, 0, point1.second);
+
+  pair<ThreeDVector*, ThreeDVector*> point2 = surface->interpolate(0, 1);
+  AdaptivePoint* adaptive_point2 = new AdaptivePoint(point2.first, 0, 1, point2.second);
+
+  pair<ThreeDVector*, ThreeDVector*> point3 = surface->interpolate(1, 0);
+  AdaptivePoint* adaptive_point3 = new AdaptivePoint(point3.first, 1, 0, point3.second);
+
+  pair<ThreeDVector*, ThreeDVector*> point4 = surface->interpolate(1, 1);
+  AdaptivePoint* adaptive_point4 = new AdaptivePoint(point4.first, 1, 1, point4.second);
+
+  queue.push(new AdaptiveTriangle(adaptive_point1, adaptive_point2, adaptive_point4));
+  queue.push(new AdaptiveTriangle(adaptive_point1, adaptive_point3, adaptive_point4));
+
+  while (!queue.empty()) {
+    AdaptiveTriangle* triangle = queue.front();
+    if (!triangle->split(&queue)) {
+      //Triangle was not split! Add to our polygons vector
+      vector<pair<ThreeDVector*, ThreeDVector*> > polygon;
+      pair<ThreeDVector*, ThreeDVector*> A = make_pair(new ThreeDVector(triangle->a->x, triangle->a->y, triangle->a->z), triangle->a->normal);
+      pair<ThreeDVector*, ThreeDVector*> B = make_pair(new ThreeDVector(triangle->b->x, triangle->b->y, triangle->b->z), triangle->b->normal);
+      pair<ThreeDVector*, ThreeDVector*> C = make_pair(new ThreeDVector(triangle->c->x, triangle->c->y, triangle->c->z), triangle->c->normal);
+      polygon.push_back(A);
+      polygon.push_back(B);
+      polygon.push_back(C);
+      polygons.push_back(polygon);
+    }
+    queue.pop();
+  }
+}
+
 void generatePolygons() {
   if (adaptive) {
-
+    for (vector<BezSurface*>::iterator i = surfaces.begin(); i != surfaces.end(); ++i) {
+      BezSurface* surface = *i;
+      adaptive_subdivide(surface);
+    }
   } else {
     for (vector<BezSurface*>::iterator i = surfaces.begin(); i != surfaces.end(); ++i) {
       BezSurface* surface = *i;
