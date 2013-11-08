@@ -525,6 +525,7 @@ void adaptive_subdivide(BezSurface* surface) {
       polygons.push_back(polygon);
     }
     queue.pop();
+    //cout << queue.size() << endl;
   }
 }
 
