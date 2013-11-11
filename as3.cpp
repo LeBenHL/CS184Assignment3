@@ -459,14 +459,14 @@ void parseBez(const char* filename) {
 void uniform_subdivide(BezSurface* surface) {
   //compute how many subdivisions there are
   int EPSILION = 0.001;
-  int num_subdivisions = (1 + EPSILION) / subdivision_parameter                                                                                                                                                                                                                                                       ;
+  int num_subdivisions = ceil((1 + EPSILION) / subdivision_parameter);                                                                                                                                                                                                                                                 ;
   pair<ThreeDVector*, ThreeDVector*> surface_points[num_subdivisions + 1][num_subdivisions + 1];
 
   for (int iu = 0; iu < num_subdivisions + 1; iu++) {
-    long double u = iu * subdivision_parameter;
+    long double u = min(iu * subdivision_parameter, 1.0);
 
     for (int iv = 0; iv < num_subdivisions + 1; iv++) {
-      long double v = iv * subdivision_parameter;
+      long double v = min(iv * subdivision_parameter, 1.0);
 
       pair<ThreeDVector*, ThreeDVector*> surface_point = surface->interpolate(u, v);
       surface_points[iu][iv] = surface_point;
