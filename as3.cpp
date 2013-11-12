@@ -252,7 +252,7 @@ void myReshape(int w, int h) {
   glMatrixMode(GL_PROJECTION);
   glLoadIdentity();
 
-  glOrtho(-5, 5, -5, 5, 5, -5);
+  glOrtho(-5, 5, -5, 5, 5, -10);
 
 }
 
